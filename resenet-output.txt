@@ -1,4 +1,3 @@
-Just for Reference
 Resnet-50 Sample result on Intel(R) Core(TM) i5-7260U CPU @ 2.20GHz
   32/1080 [..............................] - ETA: 5:44 - loss: 2.5274 - acc: 0.1875
   64/1080 [>.............................] - ETA: 3:17 - loss: 2.6416 - acc: 0.1719
