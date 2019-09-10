@@ -13,8 +13,9 @@ from keras.utils import plot_model
 from keras.initializers import glorot_uniform
 import scipy.misc
 from matplotlib.pyplot import imshow
-
+import h5py
 import keras.backend as K
+
 K.set_image_data_format('channels_last')
 K.set_learning_phase(1)
 
@@ -142,6 +143,8 @@ def ResNet50(input_shape = (64, 64, 3), classes = 6):
     # output layer
     X = Flatten()(X)
     X = Dense(classes, activation='softmax', name='fc' + str(classes), kernel_initializer=glorot_uniform(seed=0))(X)
+
+    model = Model(inputs = X_input,outputs = X,name = 'Resnet50')
 
     return model
 
