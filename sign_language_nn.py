@@ -244,18 +244,23 @@ def create_placeholders(n_x, n_y):
 
 def initialize_parameters():
     tf.set_random_seed(1)
-    with tf.name_scope("W_x"):
+    with tf.name_scope("W_1"):
         W1 = tf.get_variable("W1", [25, 12288], initializer=tf.contrib.layers.xavier_initializer(seed=1))  # 25 hidden nodes
-        b1 = tf.get_variable("b1", [25, 1], initializer=tf.contrib.layers.xavier_initializer(seed=1))
-        W2 = tf.get_variable("W2", [12, 25], initializer=tf.contrib.layers.xavier_initializer(seed=1))  # 12 hidden nodes
-        b2 = tf.get_variable("b2", [12, 1], initializer=tf.contrib.layers.xavier_initializer(seed=1))
-        W3 = tf.get_variable("W3", [6, 12], initializer=tf.contrib.layers.xavier_initializer(seed=1))  # 6 hidden nodes
-        b3 = tf.get_variable("b3", [6, 1], initializer=tf.contrib.layers.xavier_initializer(seed=1))
         variable_summaries(W1)
-        variable_summaries(W2)
-        variable_summaries(W3)
+    with tf.name_scope("b_1"):
+        b1 = tf.get_variable("b1", [25, 1], initializer=tf.contrib.layers.xavier_initializer(seed=1))
         variable_summaries(b1)
+    with tf.name_scope("W_2"):
+        W2 = tf.get_variable("W2", [12, 25], initializer=tf.contrib.layers.xavier_initializer(seed=1))  # 12 hidden nodes
+        variable_summaries(W2)
+    with tf.name_scope("b_2"):
+        b2 = tf.get_variable("b2", [12, 1], initializer=tf.contrib.layers.xavier_initializer(seed=1))
         variable_summaries(b2)
+    with tf.name_scope("W_3"):
+        W3 = tf.get_variable("W3", [6, 12], initializer=tf.contrib.layers.xavier_initializer(seed=1))  # 6 hidden nodes
+        variable_summaries(W3)
+    with tf.name_scope("b_3"):
+        b3 = tf.get_variable("b3", [6, 1], initializer=tf.contrib.layers.xavier_initializer(seed=1))
         variable_summaries(b3)
 
     parameters = {"W1": W1,
@@ -292,7 +297,7 @@ def compute_cost(Z3, Y):
     return cost
 
 
-def model(X_train, Y_train, X_test, Y_test, learning_rate=0.0001,num_epochs=1000, minibatch_size=32, print_cost=True):
+def model(X_train, Y_train, X_test, Y_test, learning_rate=0.0001,num_epochs=10, minibatch_size=32, print_cost=True):
     ops.reset_default_graph()
 
     seed = 3
@@ -323,14 +328,16 @@ def model(X_train, Y_train, X_test, Y_test, learning_rate=0.0001,num_epochs=1000
                 (minibatch_X, minibatch_Y) = minibatch
                 summary,_, minibatch_cost = sess.run([merged,optimizer, cost], feed_dict={X: minibatch_X, Y: minibatch_Y})
                 epoch_cost += minibatch_cost / num_minibatches
+                with tf.name_scope("COST"):
+                    variable_summaries(epoch_cost)
                 i = i + 1;
                 train_writer.add_summary(summary, i)
 
             if print_cost == True and epoch % 100 == 0:
                 print("Cost after epoch %i: %f" % (epoch, epoch_cost))
 
-            # if print_cost == True and epoch % 5 == 0:
-            #     costs.append(epoch_cost)
+            if print_cost == True and epoch % 5 == 0:
+                 costs.append(epoch_cost)
 
         # plt.plot(np.squeeze(costs))
         # plt.ylabel('cost')
