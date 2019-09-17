@@ -319,8 +319,6 @@ def compute_cost(Z3, Y):
     logits = tf.transpose(Z3) # Dimension :  [1080,6]
     labels = tf.transpose(Y) # Dimension :  [1080,6]
     cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=labels))
-    print("logits shape=" + str(logits.shape))
-    print("labels shape=" + str(labels.shape))
     return cost
 
 
@@ -355,13 +353,12 @@ def model(n1,n2,X_train, Y_train, X_test, Y_test, learning_rate=0.0001,num_epoch
                 (minibatch_X, minibatch_Y) = minibatch
                 summary,_, minibatch_cost = sess.run([merged,optimizer, cost], feed_dict={X: minibatch_X, Y: minibatch_Y})
                 epoch_cost += minibatch_cost / num_minibatches
-                with tf.name_scope("COST"):
-                    variable_summaries(epoch_cost)
+
                 i = i + 1;
                 train_writer.add_summary(summary, i)
                 test_writer.add_summary(summary,i)
 
-            if print_cost == True :
+            if print_cost == True and epoch % 100 == 0:
                 print("Cost after epoch %i: %f" % (epoch, epoch_cost))
 
             if print_cost == True and epoch % 5 == 0:
