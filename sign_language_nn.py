@@ -27,6 +27,18 @@ def variable_summaries(var):
          tf.summary.scalar('min', tf.reduce_min(var))
          tf.summary.histogram('histogram', var)
 
+
+# Loading the datasets for SIGN language  where
+# train_set_x_orig is array of  1080 image samples where each image is 64X64X3=12288 ==> dimension : [12288,1080]
+# train_set_y_orig is array of labels for each of 1080 image. ==> dimension: [6,1080], 6 classes are from SIGN
+# Image number from 0-5
+#  Also here for test sets,
+# test_set_x_orig ==> array of 120 images of SIGN ==> Dimension : [12288,120]
+# test_set_y_orig ===>array of 120 labels for each of above image : [6,120]
+
+# here we would implement following model
+# LINEAR -> RELU -> LINEAR -> RELU -> LINEAR -> SOFTMAX
+
 def load_dataset():
     train_dataset = h5py.File('datasets/train_signs.h5', "r")
     train_set_x_orig = np.array(train_dataset["train_set_x"][:])  # your train set features
@@ -85,7 +97,8 @@ def random_mini_batches(X, Y, mini_batch_size=64, seed=0):
 
     return mini_batches
 
-
+# selecting rows  of np.eye(6) mapped to columns values in Y.reshape(-1).T ,
+# total 1080 values for train and 120 for test
 def convert_to_one_hot(Y, C):
     Y = np.eye(C)[Y.reshape(-1)].T
     return Y
@@ -163,6 +176,18 @@ def get_data():
     return X_train, X_test, Y_train, Y_test
 
 def random_mini_batches(X, Y, mini_batch_size=64, seed=0):
+    """
+         Creates a list of random minibatches from (X, Y)
+
+         Arguments:
+         X -- input data, of shape (input size, number of examples)
+         Y -- true "label" vector (containing 0 if cat, 1 if non-cat), of shape (1, number of examples)
+         mini_batch_size - size of the mini-batches, integer
+         seed -- this is only for the purpose of grading, so that you're "random minibatches are the same as ours.
+
+         Returns:
+         mini_batches -- list of synchronous (mini_batch_X, mini_batch_Y)
+    """
     m = X.shape[1]  # number of training examples
     mini_batches = []
     np.random.seed(seed)
@@ -241,23 +266,23 @@ def create_placeholders(n_x, n_y):
     Y = tf.placeholder(tf.float32,shape=[n_y,None])
     return X,Y
 
-
-def initialize_parameters():
+# last layer would have 6 nodes as this is multi-class classification problem .
+def initialize_parameters(n1,n2):
     tf.set_random_seed(1)
     with tf.name_scope("W_1"):
-        W1 = tf.get_variable("W1", [25, 12288], initializer=tf.contrib.layers.xavier_initializer(seed=1))  # 25 hidden nodes
+        W1 = tf.get_variable("W1", [n1, 12288], initializer=tf.contrib.layers.xavier_initializer(seed=1))  # 25 hidden nodes
         variable_summaries(W1)
     with tf.name_scope("b_1"):
-        b1 = tf.get_variable("b1", [25, 1], initializer=tf.contrib.layers.xavier_initializer(seed=1))
+        b1 = tf.get_variable("b1", [n1, 1], initializer=tf.contrib.layers.xavier_initializer(seed=1))
         variable_summaries(b1)
     with tf.name_scope("W_2"):
-        W2 = tf.get_variable("W2", [12, 25], initializer=tf.contrib.layers.xavier_initializer(seed=1))  # 12 hidden nodes
+        W2 = tf.get_variable("W2", [n2, n1], initializer=tf.contrib.layers.xavier_initializer(seed=1))  # 12 hidden nodes
         variable_summaries(W2)
     with tf.name_scope("b_2"):
-        b2 = tf.get_variable("b2", [12, 1], initializer=tf.contrib.layers.xavier_initializer(seed=1))
+        b2 = tf.get_variable("b2", [n2, 1], initializer=tf.contrib.layers.xavier_initializer(seed=1))
         variable_summaries(b2)
     with tf.name_scope("W_3"):
-        W3 = tf.get_variable("W3", [6, 12], initializer=tf.contrib.layers.xavier_initializer(seed=1))  # 6 hidden nodes
+        W3 = tf.get_variable("W3", [6, n2], initializer=tf.contrib.layers.xavier_initializer(seed=1))  # 6 hidden nodes
         variable_summaries(W3)
     with tf.name_scope("b_3"):
         b3 = tf.get_variable("b3", [6, 1], initializer=tf.contrib.layers.xavier_initializer(seed=1))
@@ -281,23 +306,25 @@ def forward_propagation(X, parameters):
     W3 = parameters['W3']
     b3 = parameters['b3']
 
-    Z1 = tf.add(tf.matmul(W1, X), b1)
-    A1 = tf.nn.relu(Z1)
-    Z2 = tf.add(tf.matmul(W2, A1), b2)
-    A2 = tf.nn.relu(Z2)
-    Z3 = tf.add(tf.matmul(W3, A2), b3)
+    Z1 = tf.add(tf.matmul(W1, X), b1) # Dimension : [25,12288] * [12288,1080] = [25,1080]
+    A1 = tf.nn.relu(Z1) # [25,1080]
+    Z2 = tf.add(tf.matmul(W2, A1), b2) # Dimension :  [12,25] * [25,1080] = [12,1080]
+    A2 = tf.nn.relu(Z2) # [12,1080]
+    Z3 = tf.add(tf.matmul(W3, A2), b3) # Dimension : [6,12] * [12,1080] = [6,1080]
 
     return Z3
 
 
 def compute_cost(Z3, Y):
-    logits = tf.transpose(Z3)
-    labels = tf.transpose(Y)
+    logits = tf.transpose(Z3) # Dimension :  [1080,6]
+    labels = tf.transpose(Y) # Dimension :  [1080,6]
     cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=labels))
+    print("logits shape=" + str(logits.shape))
+    print("labels shape=" + str(labels.shape))
     return cost
 
 
-def model(X_train, Y_train, X_test, Y_test, learning_rate=0.0001,num_epochs=10, minibatch_size=32, print_cost=True):
+def model(n1,n2,X_train, Y_train, X_test, Y_test, learning_rate=0.0001,num_epochs=1000, minibatch_size=32, print_cost=True):
     ops.reset_default_graph()
 
     seed = 3
@@ -306,7 +333,7 @@ def model(X_train, Y_train, X_test, Y_test, learning_rate=0.0001,num_epochs=10, 
     costs = []
 
     X, Y = create_placeholders(n_x, n_y)
-    parameters = initialize_parameters()
+    parameters = initialize_parameters(n1,n2)
     Z3 = forward_propagation(X, parameters)
     cost = compute_cost(Z3, Y)
     merged = tf.summary.merge_all()
@@ -332,8 +359,9 @@ def model(X_train, Y_train, X_test, Y_test, learning_rate=0.0001,num_epochs=10, 
                     variable_summaries(epoch_cost)
                 i = i + 1;
                 train_writer.add_summary(summary, i)
+                test_writer.add_summary(summary,i)
 
-            if print_cost == True and epoch % 100 == 0:
+            if print_cost == True :
                 print("Cost after epoch %i: %f" % (epoch, epoch_cost))
 
             if print_cost == True and epoch % 5 == 0:
@@ -367,9 +395,9 @@ def predictImage(image,parameters):
 
     #im.show()
 
-def train_params(need_train):
+def train_params(n1,n2,need_train):
    if(need_train == True):
-        parameters = model(X_train, Y_train, X_test, Y_test)
+        parameters = model(n1,n2,X_train, Y_train, X_test, Y_test)
         with open("models/sign_nn/params.pickle", "wb") as f :
             pickle.dump(parameters, f)
 
@@ -381,6 +409,8 @@ def train_params(need_train):
 
 if __name__ == "__main__":
     X_train, X_test, Y_train, Y_test = get_data()
-    parameters = train_params(need_train=True)
+    #n1 = number of hidden nodes in first layer
+    #n2 = number of hidden nodes in second layer
+    parameters = train_params(n1=25,n2=12,need_train=True)
     predictImage("thumbs_up.jpg",parameters)
 
