@@ -388,7 +388,7 @@ def predictImage(image,parameters):
     my_image = imagearr.reshape(1,64 * 64 * 3).T #changes to (12288,1) size
     my_image_prediction = predict(my_image, parameters)
 
-    print("prediction of image is " + str(my_image_prediction))
+    print("prediction of image is " + str(np.squeeze(my_image_prediction)))
 
     #im.show()
 
@@ -408,6 +408,6 @@ if __name__ == "__main__":
     X_train, X_test, Y_train, Y_test = get_data()
     #n1 = number of hidden nodes in first layer
     #n2 = number of hidden nodes in second layer
-    parameters = train_params(n1=25,n2=12,need_train=True)
-    predictImage("thumbs_up.jpg",parameters)
+    parameters = train_params(n1=25,n2=12,need_train=False)
+    predictImage("images/fig5.jpg",parameters)
 
